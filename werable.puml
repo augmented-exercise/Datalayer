@@ -1,0 +1,51 @@
+@startuml
+class com.example.android.wearable.datalayer.MainActivity {
+- {static} String TAG
+- {static} String CAPABILITY_1_NAME
+- {static} String CAPABILITY_2_NAME
+~ ArrayList<DataLayerScreenData> mDataLayerScreenData
+- WearableRecyclerView mWearableRecyclerView
+- RecyclerView.LayoutManager mLayoutManager
+- CustomRecyclerAdapter mCustomRecyclerAdapter
+- SensorManager sensorManager
+- Sensor mGyro
+- Sensor mAccel
+- float[] mGyroValues
+- float[] mAccelValues
+- ArrayList<float[]> BufmAccel
+- ArrayList<float[]> BufmGyro
+- String hosturiID
+~ byte[] hostPayload
+~ Long BaseTime
+~ boolean isSendingData
++ void onCreate(Bundle)
+# void onResume()
+# void onPause()
++ void onDataChanged(DataEventBuffer)
++ void onStartRecordingClicked(View)
++ void onStopRecordingClicked(View)
++ void onMessageReceived(MessageEvent)
++ void onCapabilityChanged(CapabilityInfo)
+- void showNodes(String)
+- void showDiscoveredNodes(Set<Node>)
++ AmbientModeSupport.AmbientCallback getAmbientCallback()
++ void onSensorChanged(SensorEvent)
++ void sendMessage(String,Long,float,float,float)
++ void onAccuracyChanged(Sensor,int)
+}
+class com.example.android.wearable.datalayer.MainActivity.MyAmbientCallback {
++ void onEnterAmbient(Bundle)
++ void onUpdateAmbient()
++ void onExitAmbient()
+}
+
+
+com.example.android.wearable.datalayer.AmbientCallbackProvider <|.. com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.OnDataChangedListener <|.. com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.OnMessageReceivedListener <|.. com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.OnCapabilityChangedListener <|.. com.example.android.wearable.datalayer.MainActivity
+android.hardware.SensorEventListener <|.. com.example.android.wearable.datalayer.MainActivity
+androidx.fragment.app.FragmentActivity <|-- com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.MainActivity +.. com.example.android.wearable.datalayer.MainActivity.MyAmbientCallback
+com.example.android.wearable.datalayer.AmbientCallback <|-- com.example.android.wearable.datalayer.MainActivity.MyAmbientCallback
+@enduml

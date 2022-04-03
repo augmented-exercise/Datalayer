@@ -1,0 +1,91 @@
+@startuml
+class com.example.android.wearable.datalayer.MainActivity {
+- {static} String TAG
+- {static} int REQUEST_IMAGE_CAPTURE
+- {static} String START_ACTIVITY_PATH
+- {static} String COUNT_PATH
+- {static} String IMAGE_PATH
+- {static} String IMAGE_KEY
+- {static} String COUNT_KEY
+- boolean mCameraSupported
+- ListView mDataItemList
+- Button mSendPhotoBtn
+- ImageView mThumbView
+- Bitmap mImageBitmap
+- View mStartActivityBtn
+- DataItemAdapter mDataItemListAdapter
+- ScheduledExecutorService mGeneratorExecutor
+- ScheduledFuture<?> mDataItemGeneratorFuture
+- List<List<Float>> DatamAccel
+- List<List<Float>> DatamGyro
+- String[] tempParseAccel
+- String[] tempParseGyro
+~ List<Float> tempData
+~ File file
+~ String FILENAME
+~ BufferedWriter BW
+~ FileWriter fw
+~ boolean isCollectingData
++ {static} TextView collectionStatusText
++ void onCreate(Bundle)
++ void onResume()
++ void onPause()
+# void onActivityResult(int,int,Intent)
++ void onDataChanged(DataEventBuffer)
++ void onMessageReceived(MessageEvent)
++ void writeToFile(MessageEvent)
++ void onCapabilityChanged(CapabilityInfo)
+- void setupViews()
+- void openFile()
+- void closeFile()
++ void onDataStartClick(View)
++ void onDataStopClick(View)
++ void onTakePhotoClick(View)
++ void onSendPhotoClick(View)
++ void onStartWearableActivityClick(View)
+- void sendStartActivityMessage(String)
+- void dispatchTakePictureIntent()
+- {static} Asset toAsset(Bitmap)
+- void sendPhoto(Asset)
+- Collection<String> getNodes()
+- {static} void LOGD(String,String)
+}
+class com.example.android.wearable.datalayer.MainActivity.DataItemAdapter {
+- Context mContext
++ View getView(int,View,ViewGroup)
+}
+class com.example.android.wearable.datalayer.MainActivity.DataItemAdapter.ViewHolder {
+~ TextView text1
+~ TextView text2
+}
+class com.example.android.wearable.datalayer.MainActivity.Event {
+~ String title
+~ String text
+}
+class com.example.android.wearable.datalayer.MainActivity.StartWearableActivityTask {
+# Void doInBackground(Void)
+}
+class com.example.android.wearable.datalayer.MainActivity.DataItemGenerator {
+- int count
++ void run()
+}
+class com.example.android.wearable.datalayer.BuildConfig {
++ {static} boolean DEBUG
++ {static} String APPLICATION_ID
++ {static} String BUILD_TYPE
+}
+
+
+com.example.android.wearable.datalayer.OnDataChangedListener <|.. com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.OnMessageReceivedListener <|.. com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.OnCapabilityChangedListener <|.. com.example.android.wearable.datalayer.MainActivity
+android.app.Activity <|-- com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.MainActivity +.. com.example.android.wearable.datalayer.MainActivity.DataItemAdapter
+com.example.android.wearable.datalayer.ArrayAdapter <|-- com.example.android.wearable.datalayer.MainActivity.DataItemAdapter
+com.example.android.wearable.datalayer.MainActivity.DataItemAdapter +.. com.example.android.wearable.datalayer.MainActivity.DataItemAdapter.ViewHolder
+com.example.android.wearable.datalayer.MainActivity +.. com.example.android.wearable.datalayer.MainActivity.Event
+com.example.android.wearable.datalayer.MainActivity +.. com.example.android.wearable.datalayer.MainActivity.StartWearableActivityTask
+com.example.android.wearable.datalayer.AsyncTask <|-- com.example.android.wearable.datalayer.MainActivity.StartWearableActivityTask
+com.example.android.wearable.datalayer.MainActivity +.. com.example.android.wearable.datalayer.MainActivity.DataItemGenerator
+com.example.android.wearable.datalayer.Runnable <|.. com.example.android.wearable.datalayer.MainActivity.DataItemGenerator
+@enduml

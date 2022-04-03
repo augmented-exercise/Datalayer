@@ -1,0 +1,119 @@
+@startuml
+class com.example.android.wearable.datalayer.DataLayerScreen {
++ {static} int TYPE_EVENT_LOGGING
++ {static} int TYPE_CAPABILITY_DISCOVERY
+}
+interface com.example.android.wearable.datalayer.DataLayerScreen.DataLayerScreenData {
+~ int getType()
+}
+class com.example.android.wearable.datalayer.DataLayerScreen.EventLoggingData {
+- StringBuilder mLogBuilder
++ int getType()
++ String getLog()
++ void addEventLog(String,String)
+}
+class com.example.android.wearable.datalayer.DataLayerScreen.CapabilityDiscoveryData {
++ int getType()
+}
+class com.example.android.wearable.datalayer.BuildConfig {
++ {static} boolean DEBUG
++ {static} String APPLICATION_ID
++ {static} String BUILD_TYPE
++ {static} int VERSION_CODE
++ {static} String VERSION_NAME
+}
+class com.example.android.wearable.datalayer.CustomRecyclerAdapter {
+- {static} String TAG
+- ArrayList<DataLayerScreenData> mDataSet
++ ViewHolder onCreateViewHolder(ViewGroup,int)
++ void onBindViewHolder(ViewHolder,int)
++ int getItemCount()
++ int getItemViewType(int)
+- int findItemIndex(int)
++ void appendToDataEventLog(String,String)
+}
+class com.example.android.wearable.datalayer.CustomRecyclerAdapter.ImageAssetViewHolder {
+- ImageView mImageView
++ void setBackgroundImage(Bitmap)
+}
+class com.example.android.wearable.datalayer.CustomRecyclerAdapter.EventLoggingViewHolder {
+- TextView mIntroTextView
+- TextView mDataLogTextView
++ String toString()
++ void logDataLayerInformation(String)
+}
+class com.example.android.wearable.datalayer.CustomRecyclerAdapter.CapabilityDiscoveryViewHolder {
+}
+class com.example.android.wearable.datalayer.MainActivity {
+- {static} String TAG
+- {static} String CAPABILITY_1_NAME
+- {static} String CAPABILITY_2_NAME
+~ ArrayList<DataLayerScreenData> mDataLayerScreenData
+- WearableRecyclerView mWearableRecyclerView
+- RecyclerView.LayoutManager mLayoutManager
+- CustomRecyclerAdapter mCustomRecyclerAdapter
+- SensorManager sensorManager
+- Sensor mGyro
+- Sensor mAccel
+- float[] mGyroValues
+- float[] mAccelValues
+- ArrayList<float[]> BufmAccel
+- ArrayList<float[]> BufmGyro
+- String hosturiID
+~ byte[] hostPayload
+~ Long BaseTime
+~ boolean isSendingData
++ void onCreate(Bundle)
+# void onResume()
+# void onPause()
++ void onDataChanged(DataEventBuffer)
++ void onStartRecordingClicked(View)
++ void onStopRecordingClicked(View)
++ void onMessageReceived(MessageEvent)
++ void onCapabilityChanged(CapabilityInfo)
+- void showNodes(String)
+- void showDiscoveredNodes(Set<Node>)
++ AmbientModeSupport.AmbientCallback getAmbientCallback()
++ void onSensorChanged(SensorEvent)
++ void sendMessage(String,Long,float,float,float)
++ void onAccuracyChanged(Sensor,int)
+}
+class com.example.android.wearable.datalayer.MainActivity.MyAmbientCallback {
++ void onEnterAmbient(Bundle)
++ void onUpdateAmbient()
++ void onExitAmbient()
+}
+class com.example.android.wearable.datalayer.DataLayerListenerService {
+- {static} String TAG
+- {static} String START_ACTIVITY_PATH
+- {static} String DATA_ITEM_RECEIVED_PATH
++ {static} String COUNT_PATH
++ {static} String IMAGE_PATH
++ {static} String IMAGE_KEY
++ void onDataChanged(DataEventBuffer)
++ void onMessageReceived(MessageEvent)
+}
+
+
+com.example.android.wearable.datalayer.DataLayerScreen +.. com.example.android.wearable.datalayer.DataLayerScreen.DataLayerScreenData
+com.example.android.wearable.datalayer.DataLayerScreen +.. com.example.android.wearable.datalayer.DataLayerScreen.EventLoggingData
+com.example.android.wearable.datalayer.DataLayerScreenData <|.. com.example.android.wearable.datalayer.DataLayerScreen.EventLoggingData
+com.example.android.wearable.datalayer.DataLayerScreen +.. com.example.android.wearable.datalayer.DataLayerScreen.CapabilityDiscoveryData
+com.example.android.wearable.datalayer.DataLayerScreenData <|.. com.example.android.wearable.datalayer.DataLayerScreen.CapabilityDiscoveryData
+com.example.android.wearable.datalayer.Adapter <|-- com.example.android.wearable.datalayer.CustomRecyclerAdapter
+com.example.android.wearable.datalayer.CustomRecyclerAdapter +.. com.example.android.wearable.datalayer.CustomRecyclerAdapter.ImageAssetViewHolder
+com.example.android.wearable.datalayer.ViewHolder <|-- com.example.android.wearable.datalayer.CustomRecyclerAdapter.ImageAssetViewHolder
+com.example.android.wearable.datalayer.CustomRecyclerAdapter +.. com.example.android.wearable.datalayer.CustomRecyclerAdapter.EventLoggingViewHolder
+com.example.android.wearable.datalayer.ViewHolder <|-- com.example.android.wearable.datalayer.CustomRecyclerAdapter.EventLoggingViewHolder
+com.example.android.wearable.datalayer.CustomRecyclerAdapter +.. com.example.android.wearable.datalayer.CustomRecyclerAdapter.CapabilityDiscoveryViewHolder
+com.example.android.wearable.datalayer.ViewHolder <|-- com.example.android.wearable.datalayer.CustomRecyclerAdapter.CapabilityDiscoveryViewHolder
+com.example.android.wearable.datalayer.AmbientCallbackProvider <|.. com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.OnDataChangedListener <|.. com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.OnMessageReceivedListener <|.. com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.OnCapabilityChangedListener <|.. com.example.android.wearable.datalayer.MainActivity
+android.hardware.SensorEventListener <|.. com.example.android.wearable.datalayer.MainActivity
+androidx.fragment.app.FragmentActivity <|-- com.example.android.wearable.datalayer.MainActivity
+com.example.android.wearable.datalayer.MainActivity +.. com.example.android.wearable.datalayer.MainActivity.MyAmbientCallback
+com.example.android.wearable.datalayer.AmbientCallback <|-- com.example.android.wearable.datalayer.MainActivity.MyAmbientCallback
+com.google.android.gms.wearable.WearableListenerService <|-- com.example.android.wearable.datalayer.DataLayerListenerService
+@enduml
