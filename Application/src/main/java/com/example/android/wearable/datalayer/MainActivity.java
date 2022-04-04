@@ -46,6 +46,16 @@ import android.widget.TextView;
 import androidx.annotation.MainThread;
 import androidx.annotation.WorkerThread;
 
+import com.android.volley.NetworkResponse;
+import com.android.volley.ParseError;
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.HttpHeaderParser;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.JsonRequest;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
@@ -63,18 +73,25 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
@@ -82,6 +99,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import com.android.volley.RequestQueue;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Receives its own events using a listener API designed for foreground activities. Updates a data
@@ -305,6 +327,7 @@ public class MainActivity extends Activity
     }
 
     private void closeFile() {
+        Log.e("FLASK SERVER", "here!");
         isCollectingData = false;
         collectionStatusText.setText("dataCollectionEnded");
         mDataItemListAdapter.add(new Event("Message from watch", "CLOSED FILE"));
@@ -316,6 +339,12 @@ public class MainActivity extends Activity
                 e.printStackTrace();
 
             }
+        }
+        try {
+            Log.e("FLASK SERVER", "Attempting to send request");
+            dataProcessRequest(getStringFromFile(file.getPath()));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -375,6 +404,61 @@ public class MainActivity extends Activity
         } catch (InterruptedException exception) {
             Log.e(TAG, "Interrupt occurred: " + exception);
         }
+    }
+
+    public void dataProcessRequest(String input) {
+        String url = "http://34.216.227.134/";
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        JSONObject in = new JSONObject();
+
+        try {
+            in.put("", input);
+            in.put("exercise", "BP");
+        } catch (JSONException e){
+            e.printStackTrace();
+        }
+
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, in, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                // Display the first 500 characters of the response string.
+                try {
+                    Log.e("FLASK SERVER", response.getString("Exercise"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("FLASK SERVER", "error");
+            }
+        });
+
+        queue.add(jsonObjectRequest);
+    }
+
+    public static String getStringFromFile (String filePath) throws Exception {
+        File fl = new File(filePath);
+        FileInputStream fin = new FileInputStream(fl);
+        String ret = convertStreamToString(fin);
+        //Make sure you close all streams.
+        fin.close();
+        Log.e("FLASK SERVER", ret);
+        return ret;
+    }
+
+    public static String convertStreamToString(InputStream is) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n");
+        }
+        reader.close();
+        return sb.toString();
     }
 
     /**
