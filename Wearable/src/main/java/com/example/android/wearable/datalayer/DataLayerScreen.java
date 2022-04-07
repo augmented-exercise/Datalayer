@@ -37,31 +37,6 @@ public class DataLayerScreen {
         int getType();
     }
 
-    /**
-     * Represents {@link Bitmap} passed to Wear device via {@link
-     * com.google.android.gms.wearable.Asset} data layer API.
-     */
-/*    public static class ImageAssetData implements DataLayerScreenData {
-
-        private Bitmap mBitmap;
-
-        ImageAssetData(Bitmap bitmap) {
-            mBitmap = bitmap;
-        }
-
-        @Override
-        public int getType() {
-            return TYPE_IMAGE_ASSET;
-        }
-
-        public Bitmap getBitmap() {
-            return mBitmap;
-        }
-
-        public void setBitmap(Bitmap bitmap) {
-            mBitmap = bitmap;
-        }
-    }*/
 
     /**
      * Represents message event logs passed to Wear device via {@link

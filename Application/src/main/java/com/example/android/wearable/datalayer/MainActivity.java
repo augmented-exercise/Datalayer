@@ -21,40 +21,32 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.SystemClock;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.annotation.MainThread;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.WorkerThread;
 
 import com.android.volley.NetworkResponse;
-import com.android.volley.ParseError;
+import com.android.volley.NoConnectionError;
 import com.android.volley.Request;
 import com.android.volley.Response;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.JsonRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -78,13 +70,10 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -92,8 +81,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -154,7 +141,7 @@ public class MainActivity extends Activity
     boolean isCollectingData = false;
 
     public static TextView collectionStatusText;
-
+    private static final String ROOT_URL = "http://34.216.227.134";
 
 
     @Override
@@ -259,6 +246,7 @@ public class MainActivity extends Activity
             openFile();
             isCollectingData = true;
         } else if (messageEvent.toString().contains("Close File")) {
+
             closeFile();
             isCollectingData = false;
         }
@@ -271,18 +259,26 @@ public class MainActivity extends Activity
                 //mDataItemListAdapter.add(new Event("Message from watch", messageEvent.toString()));
                 tempParseAccel = messageEvent.toString().split(",");
 
-                Log.e("SENSOR TEST Accel", Long.parseLong(tempParseAccel[2]) + ", "+ Float.parseFloat(tempParseAccel[3]) + ", " + Float.parseFloat(tempParseAccel[4])+ ", " + Float.parseFloat(tempParseAccel[5]));
+                //Log.e("SENSOR TEST Accel", Long.parseLong(tempParseAccel[2]) + ", "+ Float.parseFloat(tempParseAccel[3]) + ", " + Float.parseFloat(tempParseAccel[4])+ ", " + Float.parseFloat(tempParseAccel[5]));
                 try {
-                    BW.write("a, " + tempParseAccel[2] + ", " + tempParseAccel[3] + ", " + tempParseAccel[4] + ", " + tempParseAccel[5] + "\n");
+                    if (tempParseAccel[1] != null && tempParseAccel[2] != null && tempParseAccel[3] != null && tempParseAccel[4] != null && tempParseAccel[5] != null) {
+                        BW.write("a, " + tempParseAccel[2] + ", " + tempParseAccel[3] + ", " + tempParseAccel[4] + ", " + tempParseAccel[5] + "\n");
+                    } else {
+                        Log.e("Error check", "Bad Data");
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             } else if (messageEvent.toString().contains("DataG")) {
                 tempParseGyro = messageEvent.toString().split(",");
-                //Log.e("SENSOR TEST Gyro", "x: "+ tempParseGyro[2] + ", y: " + tempParseGyro[3] + ", z: " + tempParseGyro[4]);
+                //Log.e("SENSOR TEST Gyro", "x: "+ tempParseGyro[3] + ", y: " + tempParseGyro[4] + ", z: " + tempParseGyro[5]);
 
                 try {
-                    BW.write("g, " + tempParseGyro[2] + ", " + tempParseGyro[3] + ", " + tempParseGyro[4] + ", " + tempParseGyro[5] + "\n");
+                    if (tempParseAccel[1] != null && tempParseAccel[2] != null && tempParseAccel[3] != null && tempParseAccel[4] != null && tempParseAccel[5] != null) {
+                        BW.write("g, " + tempParseGyro[2] + ", " + tempParseGyro[3] + ", " + tempParseGyro[4] + ", " + tempParseGyro[5] + "\n");
+                    } else {
+                        Log.e("Error check", "Bad Data");
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -327,7 +323,7 @@ public class MainActivity extends Activity
     }
 
     private void closeFile() {
-        Log.e("FLASK SERVER", "here!");
+        Log.e("FLASK SERVER", "starting to close file");
         isCollectingData = false;
         collectionStatusText.setText("dataCollectionEnded");
         mDataItemListAdapter.add(new Event("Message from watch", "CLOSED FILE"));
@@ -340,12 +336,8 @@ public class MainActivity extends Activity
 
             }
         }
-        try {
-            Log.e("FLASK SERVER", "Attempting to send request");
-            dataProcessRequest(getStringFromFile(file.getPath()));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Log.e("FLASK SERVER", "Preparing to send request");
+        sendRequest();
     }
 
     public void onDataStartClick(View view) {
@@ -353,7 +345,11 @@ public class MainActivity extends Activity
     }
 
     public void onDataStopClick(View view) {
+        Log.e("FLASK SERVER", "entered onDataStopClick()");
         closeFile();
+        Log.e("FLASK SERVER", "Preparing to send request");
+        sendRequest();
+
 /*            Timer timer = new Timer();
             timer.schedule(new TimerTask() {
                 public void run() {
@@ -366,16 +362,6 @@ public class MainActivity extends Activity
             }, 5000);*/
     }
 
-
-    public void onTakePhotoClick(View view) {
-        dispatchTakePictureIntent();
-    }
-
-    public void onSendPhotoClick(View view) {
-        if (null != mImageBitmap) {
-            sendPhoto(toAsset(mImageBitmap));
-        }
-    }
 
     /** Sends an RPC to start a fullscreen Activity on the wearable. */
     public void onStartWearableActivityClick(View view) {
@@ -404,116 +390,6 @@ public class MainActivity extends Activity
         } catch (InterruptedException exception) {
             Log.e(TAG, "Interrupt occurred: " + exception);
         }
-    }
-
-    public void dataProcessRequest(String input) {
-        String url = "http://34.216.227.134/";
-
-        RequestQueue queue = Volley.newRequestQueue(this);
-
-        JSONObject in = new JSONObject();
-
-        try {
-            in.put("", input);
-            in.put("exercise", "BP");
-        } catch (JSONException e){
-            e.printStackTrace();
-        }
-
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, in, new Response.Listener<JSONObject>() {
-            @Override
-            public void onResponse(JSONObject response) {
-                // Display the first 500 characters of the response string.
-                try {
-                    Log.e("FLASK SERVER", response.getString("Exercise"));
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e("FLASK SERVER", "error");
-            }
-        });
-
-        queue.add(jsonObjectRequest);
-    }
-
-    public static String getStringFromFile (String filePath) throws Exception {
-        File fl = new File(filePath);
-        FileInputStream fin = new FileInputStream(fl);
-        String ret = convertStreamToString(fin);
-        //Make sure you close all streams.
-        fin.close();
-        Log.e("FLASK SERVER", ret);
-        return ret;
-    }
-
-    public static String convertStreamToString(InputStream is) throws Exception {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        StringBuilder sb = new StringBuilder();
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            sb.append(line).append("\n");
-        }
-        reader.close();
-        return sb.toString();
-    }
-
-    /**
-     * Dispatches an {@link android.content.Intent} to take a photo. Result will be returned back in
-     * onActivityResult().
-     */
-    private void dispatchTakePictureIntent() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-        }
-    }
-
-    /**
-     * Builds an {@link com.google.android.gms.wearable.Asset} from a bitmap. The image that we get
-     * back from the camera in "data" is a thumbnail size. Typically, your image should not exceed
-     * 320x320 and if you want to have zoom and parallax effect in your app, limit the size of your
-     * image to 640x400. Resize your image before transferring to your wearable device.
-     */
-    private static Asset toAsset(Bitmap bitmap) {
-        ByteArrayOutputStream byteStream = null;
-        try {
-            byteStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream);
-            return Asset.createFromBytes(byteStream.toByteArray());
-        } finally {
-            if (null != byteStream) {
-                try {
-                    byteStream.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
-        }
-    }
-
-    /**
-     * Sends the asset that was created from the photo we took by adding it to the Data Item store.
-     */
-    private void sendPhoto(Asset asset) {
-        PutDataMapRequest dataMap = PutDataMapRequest.create(IMAGE_PATH);
-        dataMap.getDataMap().putAsset(IMAGE_KEY, asset);
-        dataMap.getDataMap().putLong("time", new Date().getTime());
-        PutDataRequest request = dataMap.asPutDataRequest();
-        request.setUrgent();
-
-        Task<DataItem> dataItemTask = Wearable.getDataClient(this).putDataItem(request);
-
-        dataItemTask.addOnSuccessListener(
-                new OnSuccessListener<DataItem>() {
-                    @Override
-                    public void onSuccess(DataItem dataItem) {
-                        LOGD(TAG, "Sending image was successful: " + dataItem);
-                    }
-                });
     }
 
     @WorkerThread
@@ -641,4 +517,92 @@ public class MainActivity extends Activity
             }
         }
     }
+
+    private void sendRequest() {
+        // loading or check internet connection or something...
+        // ... then
+        String url = ROOT_URL;
+
+        VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, url, new Response.Listener<NetworkResponse>() {
+            @Override
+            public void onResponse(NetworkResponse response) {
+                Log.e("FLASK TEST", "got response");
+                Log.e("FLASK TEST", response.toString());
+                LOGD("FLASK TEST", response.toString());
+                collectionStatusText.setText(response.toString());
+
+                String resultResponse = new String(response.data);
+                try {
+                    JSONObject result = new JSONObject(resultResponse);
+                    String exercise = result.getString("Exercise");
+                    String form = result.getString("Form");
+                    String reps = result.getString("reps");
+                    Log.e("FLASK TEST", exercise);
+                    Log.e("FLASK TEST", form);
+                    Log.e("FLASK TEST", reps);
+
+                    /*if (status.equals(Constant.REQUEST_SUCCESS)) {
+                        // tell everybody you have succed upload image and post strings
+                        Log.i("Messsage", message);
+                    } else {
+                        Log.i("Unexpected", message);
+                    }*/
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                NetworkResponse networkResponse = error.networkResponse;
+                String errorMessage = "Unknown error";
+                if (networkResponse == null) {
+                    if (error.getClass().equals(TimeoutError.class)) {
+                        errorMessage = "Request timeout";
+                    } else if (error.getClass().equals(NoConnectionError.class)) {
+                        errorMessage = "Failed to connect server";
+                    }
+                } else {
+                    String result = new String(networkResponse.data);
+
+                        Log.e("ERROR RESULT", result);
+
+                        if (networkResponse.statusCode == 404) {
+                            errorMessage = "Resource not found";
+                        } else if (networkResponse.statusCode == 401) {
+                            errorMessage = " Please login again";
+                        } else if (networkResponse.statusCode == 400) {
+                            errorMessage = " Check your inputs";
+                        } else if (networkResponse.statusCode == 500) {
+                            errorMessage = " Something is getting wrong";
+                        }
+                }
+                Log.i("Error", errorMessage);
+                error.printStackTrace();
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("exercise", "BP");
+                return params;
+            }
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            protected Map<String, DataPart> getByteData() {
+                Map<String, DataPart> params = new HashMap<>();
+                // file name could found file base or direct access from real path
+                // for now just get bitmap data from ImageView
+                try {
+                    params.put("data", new DataPart(FILENAME, AppHelper.getFileDataFromFileName(getBaseContext(), FILENAME), "text/txt"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return params;
+            }
+        };
+
+        VolleySingleton.getInstance(getBaseContext()).addToRequestQueue(multipartRequest);
+    }
+
 }
